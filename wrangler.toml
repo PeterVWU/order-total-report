@@ -4,6 +4,10 @@ main = "src/index.ts"
 compatibility_date = "2024-11-12"
 compatibility_flags = ["nodejs_compat"]
 
+[vars]
+SHOPIFY_DOMAINS = "eliquid-com,MistHub,ejuices-co,ejuices,yamivapor,deals-305,ca2bbf"
+MAGENTO_DOMAINS = "vapewholesaleusa.com"
+
 # Workers Logs
 # Docs: https://developers.cloudflare.com/workers/observability/logs/workers-logs/
 # Configuration: https://developers.cloudflare.com/workers/observability/logs/workers-logs/#enable-workers-logs
