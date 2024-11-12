@@ -182,7 +182,6 @@ async function fetchMagentoOrdersPage(store: MagentoStore, dateRange: { start: s
 
 	const data: any = await response.json();
 
-	// Log the first and last order dates to verify date filtering
 	if (data.items && data.items.length > 0) {
 		console.log(`First order date: ${data.items[0].created_at}`);
 		console.log(`Last order date: ${data.items[data.items.length - 1].created_at}`);
