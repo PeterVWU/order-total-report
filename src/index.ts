@@ -52,60 +52,53 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
   }`;
 
 
-function getPSTDate(date: Date): Date {
-	// Create a date string in PST using the built-in date functions
-	const pstString = date.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles",
-		year: 'numeric',
-		month: '2-digit',
-		day: '2-digit',
-		hour: '2-digit',
-		minute: '2-digit',
-		second: '2-digit',
-		hour12: false
+function getYesterdayPDT(): { start: string; end: string } {
+	// Get current date
+	const now = new Date();
+
+	// Convert to PDT
+	const pdtString = now.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
 	});
+	const pdtDate = new Date(pdtString);
 
-	// Parse the PST string back into a date
-	// Format: MM/DD/YYYY, HH:MM:SS
-	const [datePart, timePart] = pstString.split(", ");
-	const [month, day, year] = datePart.split("/");
-	const [hours, minutes, seconds] = timePart.split(":");
+	// Set to yesterday's date while preserving PDT
+	pdtDate.setDate(pdtDate.getDate() - 1);
 
-	return new Date(Date.UTC(
-		parseInt(year),
-		parseInt(month) - 1, // Months are 0-based in JS
-		parseInt(day),
-		parseInt(hours),
-		parseInt(minutes),
-		parseInt(seconds)
-	));
-}
+	// Create yesterday start (00:00:00 PDT)
+	const yesterdayStart = new Date(pdtDate);
+	yesterdayStart.setHours(0, 0, 0, 0);
 
+	// Create yesterday end (23:59:59.999 PDT)
+	const yesterdayEnd = new Date(pdtDate);
+	yesterdayEnd.setHours(23, 59, 59, 999);
 
-function getYesterdayDate(): { start: string; end: string } {
-	// Get current date in PST
-	const today = getPSTDate(new Date());
+	// Convert PDT times to UTC for ISO string
+	const startUTC = new Date(yesterdayStart.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
+	}));
 
-	// Set to previous day
-	today.setUTCDate(today.getUTCDate() - 1);
+	const endUTC = new Date(yesterdayEnd.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
+	}));
 
-	// Create start of day (00:00:00)
-	const start = new Date(today);
-	start.setUTCHours(0, 0, 0, 0);
-
-	// Create end of day (23:59:59.999)
-	const end = new Date(today);
-	end.setUTCHours(23, 59, 59, 999);
-
-	console.log('Generated PST date range:');
-	console.log('- Start:', start.toISOString());
-	console.log('- End:', end.toISOString());
-	console.log('- PST Start:', new Date(start).toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
-	console.log('- PST End:', new Date(end).toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+	// Add logging to verify the times
+	console.log('PDT Date Range:');
+	console.log('Yesterday date in PDT:', pdtDate.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
+	}));
+	console.log('Start PDT:', yesterdayStart.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
+	}));
+	console.log('End PDT:', yesterdayEnd.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles"
+	}));
+	console.log('Start UTC:', startUTC.toISOString());
+	console.log('End UTC:', endUTC.toISOString());
 
 	return {
-		start: start.toISOString(),
-		end: end.toISOString()
+		start: startUTC.toISOString(),
+		end: endUTC.toISOString()
 	};
 }
 
@@ -214,7 +207,6 @@ async function fetchMagentoOrdersPage(store: MagentoStore, dateRange: { start: s
 		.join('&');
 
 	const url = `https://${store.domain}/rest/V1/orders?${queryString}`;
-	console.log(`Fetching Magento orders from: ${url}`);
 
 	const response = await fetch(url, {
 		headers: {
@@ -373,8 +365,24 @@ async function sendToCliq(webhookUrl: string, storeData: { [key: string]: StoreM
 export default {
 	async scheduled(event: ScheduledEvent, env: Environment, ctx: ExecutionContext) {
 		try {
-			const dateRange = getYesterdayDate();
-			const date = dateRange.start.split('T')[0];
+			const dateRange = getYesterdayPDT();
+			const date = new Date(dateRange.start).toLocaleDateString("en-US", {
+				timeZone: "America/Los_Angeles",
+				year: 'numeric',
+				month: '2-digit',
+				day: '2-digit'
+			});
+			console.log(`Running report for PDT date: ${date}`);
+			console.log('Date range:', {
+				startPDT: new Date(dateRange.start).toLocaleString("en-US", {
+					timeZone: "America/Los_Angeles"
+				}),
+				endPDT: new Date(dateRange.end).toLocaleString("en-US", {
+					timeZone: "America/Los_Angeles"
+				}),
+				startUTC: dateRange.start,
+				endUTC: dateRange.end
+			});
 			const stores = getStoresFromEnv(env);
 			const storeMetrics: { [key: string]: StoreMetrics } = {};
 
@@ -391,7 +399,7 @@ export default {
 					}
 				})
 			);
-
+			console.log('storeMetrics', storeMetrics)
 			const zoho_url = `${env.ZOHO_CLIQ_API_ENDPOINT}?zapikey=${env.ZOHO_CLIQ_WEBHOOK_TOKEN}&bot_unique_name=${env.ZOHO_CLIQ_BOTNAME}`
 			// await sendToCliq(zoho_url, storeMetrics, date);
 		} catch (error) {
