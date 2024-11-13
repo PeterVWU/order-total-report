@@ -145,6 +145,9 @@ async function fetchMagentoOrdersPage(store: MagentoStore, dateRange: { start: s
 
 	const startDate = formatDate(dateRange.start, false);
 	const endDate = formatDate(dateRange.start, true);
+	console.log('fetchMagentoOrdersPage')
+	console.log('startDate', startDate)
+	console.log('endDate', endDate)
 
 	console.log(`Fetching orders for ${store.domain} between ${startDate} and ${endDate}`);
 
@@ -339,7 +342,7 @@ export default {
 			);
 
 			const zoho_url = `${env.ZOHO_CLIQ_API_ENDPOINT}?zapikey=${env.ZOHO_CLIQ_WEBHOOK_TOKEN}&bot_unique_name=${env.ZOHO_CLIQ_BOTNAME}`
-			await sendToCliq(zoho_url, storeMetrics, date);
+			// await sendToCliq(zoho_url, storeMetrics, date);
 		} catch (error) {
 			console.error('Worker execution failed:', error);
 		}
