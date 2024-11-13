@@ -52,16 +52,59 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
   }`;
 
 
-function getYesterdayDate(): { start: string; end: string } {
-	const yesterday = new Date();
-	yesterday.setDate(yesterday.getDate() - 1);
-	yesterday.setHours(0, 0, 0, 0);
+function getPSTDate(date: Date): Date {
+	// Create a date string in PST using the built-in date functions
+	const pstString = date.toLocaleString("en-US", {
+		timeZone: "America/Los_Angeles",
+		year: 'numeric',
+		month: '2-digit',
+		day: '2-digit',
+		hour: '2-digit',
+		minute: '2-digit',
+		second: '2-digit',
+		hour12: false
+	});
 
-	const end = new Date(yesterday);
-	end.setHours(23, 59, 59, 999);
+	// Parse the PST string back into a date
+	// Format: MM/DD/YYYY, HH:MM:SS
+	const [datePart, timePart] = pstString.split(", ");
+	const [month, day, year] = datePart.split("/");
+	const [hours, minutes, seconds] = timePart.split(":");
+
+	return new Date(Date.UTC(
+		parseInt(year),
+		parseInt(month) - 1, // Months are 0-based in JS
+		parseInt(day),
+		parseInt(hours),
+		parseInt(minutes),
+		parseInt(seconds)
+	));
+}
+
+
+function getYesterdayDate(): { start: string; end: string } {
+	// Get current date in PST
+	const today = getPSTDate(new Date());
+
+	// Set to previous day
+	today.setUTCDate(today.getUTCDate() - 1);
+
+	// Create start of day (00:00:00)
+	const start = new Date(today);
+	start.setUTCHours(0, 0, 0, 0);
+
+	// Create end of day (23:59:59.999)
+	const end = new Date(today);
+	end.setUTCHours(23, 59, 59, 999);
+
+	console.log('Generated PST date range:');
+	console.log('- Start:', start.toISOString());
+	console.log('- End:', end.toISOString());
+	console.log('- PST Start:', new Date(start).toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
+	console.log('- PST End:', new Date(end).toLocaleString("en-US", { timeZone: "America/Los_Angeles" }));
 
 	return {
-		start: yesterday.toISOString(),
+		start: start.toISOString(),
 		end: end.toISOString()
 	};
 }
@@ -105,6 +148,11 @@ function getStoresFromEnv(env: Environment): Store[] {
 }
 
 async function fetchShopifyOrdersPage(store: ShopifyStore, query: string, cursor?: string): Promise<any> {
+	console.log(`Fetching orders for ${store.domain} with query: ${query}`);
+	if (cursor) {
+		console.log(`Using cursor: ${cursor}`);
+	}
+
 	const response = await fetch(`https://${store.domain}.myshopify.com/admin/api/2024-01/graphql.json`, {
 		method: 'POST',
 		headers: {
@@ -145,9 +193,6 @@ async function fetchMagentoOrdersPage(store: MagentoStore, dateRange: { start: s
 
 	const startDate = formatDate(dateRange.start, false);
 	const endDate = formatDate(dateRange.start, true);
-	console.log('fetchMagentoOrdersPage')
-	console.log('startDate', startDate)
-	console.log('endDate', endDate)
 
 	console.log(`Fetching orders for ${store.domain} between ${startDate} and ${endDate}`);
 
@@ -239,6 +284,8 @@ async function fetchMagentoOrders(store: MagentoStore, dateRange: { start: strin
 }
 
 async function fetchShopifyOrders(store: ShopifyStore, dateRange: { start: string; end: string }): Promise<StoreMetrics> {
+	console.log(`Fetching Shopify orders for ${store.domain}`);
+	console.log(`Date range: ${dateRange.start} to ${dateRange.end}`);
 	const query = `created_at:>='${dateRange.start}' AND created_at:<='${dateRange.end}'`;
 	let hasNextPage = true;
 	let cursor: string | undefined;
@@ -254,8 +301,9 @@ async function fetchShopifyOrders(store: ShopifyStore, dateRange: { start: strin
 		cursor = pageData.pageInfo.endCursor;
 		pageCount++;
 
-		console.log(`Fetched page ${pageCount} for ${store.domain}. Orders so far: ${allOrders.length}`);
-
+		console.log(`Page ${pageCount} summary for ${store.domain}:`);
+		console.log(`- Total orders so far: ${allOrders.length}`);
+		console.log(`- Has next page: ${hasNextPage}`);
 		// Add a small delay between requests to respect rate limits
 		if (hasNextPage) {
 			await new Promise(resolve => setTimeout(resolve, 500));
@@ -269,6 +317,9 @@ async function fetchShopifyOrders(store: ShopifyStore, dateRange: { start: strin
 		(sum: number, edge: any) => sum + parseFloat(edge.node.totalPriceSet.shopMoney.amount),
 		0
 	);
+	console.log(`Final results for ${store.domain}:`);
+	console.log(`- Total unique orders: ${allOrders.length}`);
+	console.log(`- Total amount: ${totalAmount}`);
 
 	return {
 		orderCount: allOrders.length,
