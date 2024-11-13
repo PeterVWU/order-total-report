@@ -52,55 +52,47 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
   }`;
 
 
-function getYesterdayPDT(): { start: string; end: string } {
-	// Get current date
-	const now = new Date();
+async function getYesterdayPST(): Promise<{ start: string; end: string }> {
+	try {
+		// Get current PST time directly from API
+		const response = await fetch('http://worldclockapi.com/api/json/pst/now');
+		if (!response.ok) {
+			throw new Error(`World Clock API failed: ${response.statusText}`);
+		}
 
-	// Convert to PDT
-	const pdtString = now.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	});
-	const pdtDate = new Date(pdtString);
+		const data: any = await response.json();
+		console.log('API Response:', data);
 
-	// Set to yesterday's date while preserving PDT
-	pdtDate.setDate(pdtDate.getDate() - 1);
+		// Parse current PST time
+		const currentPST = new Date(data.currentDateTime);
 
-	// Create yesterday start (00:00:00 PDT)
-	const yesterdayStart = new Date(pdtDate);
-	yesterdayStart.setHours(0, 0, 0, 0);
+		// Get yesterday's date in PST
+		const yesterdayPST = new Date(currentPST);
+		yesterdayPST.setDate(currentPST.getDate() - 1);
 
-	// Create yesterday end (23:59:59.999 PDT)
-	const yesterdayEnd = new Date(pdtDate);
-	yesterdayEnd.setHours(23, 59, 59, 999);
+		// Create start and end times (midnight to midnight PST)
+		const startPST = new Date(yesterdayPST);
+		startPST.setHours(0, 0, 0, 0);
 
-	// Convert PDT times to UTC for ISO string
-	const startUTC = new Date(yesterdayStart.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	}));
+		const endPST = new Date(yesterdayPST);
+		endPST.setHours(23, 59, 59, 999);
 
-	const endUTC = new Date(yesterdayEnd.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	}));
+		console.log('Time calculations:');
+		console.log('Current PST from API:', currentPST.toISOString());
+		console.log('Yesterday PST:', yesterdayPST.toISOString());
+		console.log('Start PST:', startPST.toISOString());
+		console.log('End PST:', endPST.toISOString());
 
-	// Add logging to verify the times
-	console.log('PDT Date Range:');
-	console.log('Yesterday date in PDT:', pdtDate.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	}));
-	console.log('Start PDT:', yesterdayStart.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	}));
-	console.log('End PDT:', yesterdayEnd.toLocaleString("en-US", {
-		timeZone: "America/Los_Angeles"
-	}));
-	console.log('Start UTC:', startUTC.toISOString());
-	console.log('End UTC:', endUTC.toISOString());
-
-	return {
-		start: startUTC.toISOString(),
-		end: endUTC.toISOString()
-	};
+		return {
+			start: startPST.toISOString(),
+			end: endPST.toISOString()
+		};
+	} catch (error) {
+		console.error('Error getting PST time:', error);
+		throw error;
+	}
 }
+
 
 function getStoresFromEnv(env: Environment): Store[] {
 	const stores: Store[] = [];
@@ -365,7 +357,7 @@ async function sendToCliq(webhookUrl: string, storeData: { [key: string]: StoreM
 export default {
 	async scheduled(event: ScheduledEvent, env: Environment, ctx: ExecutionContext) {
 		try {
-			const dateRange = getYesterdayPDT();
+			const dateRange = await getYesterdayPST();
 			const date = new Date(dateRange.start).toLocaleDateString("en-US", {
 				timeZone: "America/Los_Angeles",
 				year: 'numeric',
