@@ -54,22 +54,22 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
 
 async function getYesterdayPST(): Promise<{ start: string; end: string }> {
 	try {
-		const response = await fetch('http://worldclockapi.com/api/json/pst/now');
+		const response = await fetch('http://worldtimeapi.org/api/timezone/America/Los_Angeles');
 		if (!response.ok) {
-			throw new Error(`World Clock API failed: ${response.statusText}`);
+			throw new Error(`World Time API failed: ${response.statusText}`);
 		}
 
 		const data: any = await response.json();
 		console.log('API Response:', data);
 
 		// Parse current PST time
-		const currentPST = new Date(data.currentDateTime);
+		const currentPST = new Date(data.datetime);
 		console.log('Current PST from API:', currentPST.toISOString());
 		console.log('Current PST local:', currentPST.toString());
 
 		// Get yesterday by subtracting one day from the current date
 		const yesterdayPST = new Date(currentPST);
-		yesterdayPST.setUTCDate(currentPST.getUTCDate() - 2);
+		yesterdayPST.setUTCDate(currentPST.getUTCDate() - 1);
 		console.log('Yesterday PST:', yesterdayPST.toISOString());
 		console.log('Yesterday PST local:', yesterdayPST.toString());
 
@@ -410,7 +410,7 @@ export default {
 			);
 			console.log('storeMetrics', storeMetrics)
 			const zoho_url = `${env.ZOHO_CLIQ_API_ENDPOINT}?zapikey=${env.ZOHO_CLIQ_WEBHOOK_TOKEN}&bot_unique_name=${env.ZOHO_CLIQ_BOTNAME}`
-			await sendToCliq(zoho_url, storeMetrics, date);
+			// await sendToCliq(zoho_url, storeMetrics, date);
 		} catch (error) {
 			console.error('Worker execution failed:', error);
 		}
