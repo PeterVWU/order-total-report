@@ -54,7 +54,6 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
 
 async function getYesterdayPST(): Promise<{ start: string; end: string }> {
 	try {
-		// Get current PST time directly from API
 		const response = await fetch('http://worldclockapi.com/api/json/pst/now');
 		if (!response.ok) {
 			throw new Error(`World Clock API failed: ${response.statusText}`);
@@ -65,23 +64,41 @@ async function getYesterdayPST(): Promise<{ start: string; end: string }> {
 
 		// Parse current PST time
 		const currentPST = new Date(data.currentDateTime);
+		console.log('Current PST from API:', currentPST.toISOString());
+		console.log('Current PST local:', currentPST.toString());
 
-		// Get yesterday's date in PST
+		// Get yesterday by subtracting one day from the current date
 		const yesterdayPST = new Date(currentPST);
-		yesterdayPST.setDate(currentPST.getDate() - 1);
+		yesterdayPST.setUTCDate(currentPST.getUTCDate() - 2);
+		console.log('Yesterday PST:', yesterdayPST.toISOString());
+		console.log('Yesterday PST local:', yesterdayPST.toString());
 
-		// Create start and end times (midnight to midnight PST)
-		const startPST = new Date(yesterdayPST);
-		startPST.setHours(0, 0, 0, 0);
+		// Extract year, month, and day from yesterdayPST
+		const year = yesterdayPST.getUTCFullYear();
+		const month = yesterdayPST.getUTCMonth();
+		const day = yesterdayPST.getUTCDate();
 
-		const endPST = new Date(yesterdayPST);
-		endPST.setHours(23, 59, 59, 999);
+		// Create start of yesterday in PST (00:00:00 PST = 08:00:00 UTC)
+		const startPST = new Date(Date.UTC(year, month, day, 8, 0, 0, 0));
+
+		// Create end of yesterday in PST (23:59:59.999 PST = 07:59:59.999 UTC next day)
+		const endPST = new Date(Date.UTC(year, month, day + 1, 7, 59, 59, 999));
 
 		console.log('Time calculations:');
-		console.log('Current PST from API:', currentPST.toISOString());
-		console.log('Yesterday PST:', yesterdayPST.toISOString());
-		console.log('Start PST:', startPST.toISOString());
-		console.log('End PST:', endPST.toISOString());
+		console.log('Year/Month/Day (UTC):', year, month + 1, day);
+		console.log('Start PST (UTC):', startPST.toISOString());
+		console.log('Start PST (local):', startPST.toString());
+		console.log('End PST (UTC):', endPST.toISOString());
+		console.log('End PST (local):', endPST.toString());
+
+		// Additional validation
+		const startInPST = new Date(startPST.toISOString());
+		startInPST.setHours(startInPST.getHours() - 8); // Convert to PST for validation
+		console.log('Start time in PST should be midnight:', startInPST.toString());
+
+		const endInPST = new Date(endPST.toISOString());
+		endInPST.setHours(endInPST.getHours() - 8); // Convert to PST for validation
+		console.log('End time in PST should be 23:59:59:', endInPST.toString());
 
 		return {
 			start: startPST.toISOString(),
