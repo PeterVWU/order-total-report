@@ -53,19 +53,21 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
 
 
 async function getYesterdayPST(): Promise<{ start: string; end: string }> {
-	const testTime = new Date()
-	console.log("testTime.toISOString()", testTime.toISOString())
 	try {
-		const response = await fetch('https://worldtimeapi.org/api/timezone/America/Los_Angeles');
-		if (!response.ok) {
-			throw new Error(`World Time API failed: ${response.statusText}`);
-		}
+		// const response = await fetch('https://worldtimeapi.org/api/timezone/America/Los_Angeles');
+		// if (!response.ok) {
+		// 	throw new Error(`World Time API failed: ${response.statusText}`);
+		// }
 
-		const data: any = await response.json();
-		console.log('API Response:', data);
+		// const data: any = await response.json();
+		// console.log('API Response:', data);
 
 		// Parse current PST time
-		const currentPST = new Date(data.datetime);
+		// const currentPST = new Date(data.datetime);
+
+		const currentPST = new Date()
+		currentPST.setTime(currentPST.getTime() + (-8 * 60 * 60 * 1000));
+
 		console.log('Current PST from API:', currentPST.toISOString());
 		console.log('Current PST local:', currentPST.toString());
 
