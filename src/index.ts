@@ -54,7 +54,7 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
 
 async function getYesterdayPST(): Promise<{ start: string; end: string }> {
 	try {
-		const response = await fetch('http://worldtimeapi.org/api/timezone/America/Los_Angeles');
+		const response = await fetch('https://worldtimeapi.org/api/timezone/America/Los_Angeles');
 		if (!response.ok) {
 			throw new Error(`World Time API failed: ${response.statusText}`);
 		}
