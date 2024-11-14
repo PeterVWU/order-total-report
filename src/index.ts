@@ -53,6 +53,8 @@ const ORDERS_QUERY = `query getOrders($query: String!, $cursor: String) {
 
 
 async function getYesterdayPST(): Promise<{ start: string; end: string }> {
+	const testTime = new Date()
+	console.log("testTime.toISOString()", testTime.toISOString())
 	try {
 		const response = await fetch('https://worldtimeapi.org/api/timezone/America/Los_Angeles');
 		if (!response.ok) {
@@ -410,7 +412,7 @@ export default {
 			);
 			console.log('storeMetrics', storeMetrics)
 			const zoho_url = `${env.ZOHO_CLIQ_API_ENDPOINT}?zapikey=${env.ZOHO_CLIQ_WEBHOOK_TOKEN}&bot_unique_name=${env.ZOHO_CLIQ_BOTNAME}`
-			await sendToCliq(zoho_url, storeMetrics, date);
+			// await sendToCliq(zoho_url, storeMetrics, date);
 		} catch (error) {
 			console.error('Worker execution failed:', error);
 		}
