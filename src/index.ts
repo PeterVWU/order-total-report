@@ -280,7 +280,7 @@ async function fetchMagentoOrders(store: MagentoStore, dateRange: { start: strin
 async function fetchShopifyOrders(store: ShopifyStore, dateRange: { start: string; end: string }): Promise<StoreMetrics> {
 	console.log(`Fetching Shopify orders for ${store.domain}`);
 	console.log(`Date range: ${dateRange.start} to ${dateRange.end}`);
-	const query = `created_at:>='${dateRange.start}' AND created_at:<='${dateRange.end}'`;
+	const query = `created_at:>='${dateRange.start}' AND created_at:<='${dateRange.end}' AND risk_level:LOW OR risk_level:MEDIUM OR risk_level:non`;
 	let hasNextPage = true;
 	let cursor: string | undefined;
 	let allOrders: any[] = [];
@@ -342,13 +342,13 @@ async function sendToCliq(webhookUrl: string, storeData: { [key: string]: StoreM
 			Object.entries(storeData)
 				.map(([domain, metrics]) =>
 					`${domainName[domain] || domain}:\n` +
-					`📦 Orders: ${metrics.orderCount}\n` +
-					`💰 Total: $${metrics.totalAmount.toFixed(2)}`
+					`📦 Orders: ${metrics.orderCount}\n`
+					// `💰 Total: $${metrics.totalAmount.toFixed(2)}`
 				)
 				.join('\n\n') +
 			`\n\n📈 Summary:\n` +
-			`Total Orders: ${totalOrders}\n` +
-			`Total Amount: $${totalAmount.toFixed(2)}`
+			`Total Orders: ${totalOrders}\n`
+		// `Total Amount: $${totalAmount.toFixed(2)}`
 	};
 
 	const response = await fetch(webhookUrl, {
