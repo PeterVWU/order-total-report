@@ -62,7 +62,7 @@ async function getYesterdayPST(): Promise<{ start: string; end: string }> {
 
 		// Get yesterday by subtracting one day from the current date
 		const yesterdayPST = new Date(currentPST);
-		yesterdayPST.setUTCDate(currentPST.getUTCDate() - 1);
+		yesterdayPST.setUTCDate(currentPST.getUTCDate() - 2);
 		console.log('Yesterday PST:', yesterdayPST.toISOString());
 		console.log('Yesterday PST local:', yesterdayPST.toString());
 
@@ -342,13 +342,11 @@ async function sendToCliq(webhookUrl: string, storeData: { [key: string]: StoreM
 			Object.entries(storeData)
 				.map(([domain, metrics]) =>
 					`${domainName[domain] || domain}:\n` +
-					`📦 Orders: ${metrics.orderCount}\n`
-					// `💰 Total: $${metrics.totalAmount.toFixed(2)}`
+					`📦 Orders: ${metrics.orderCount}`
 				)
 				.join('\n\n') +
 			`\n\n📈 Summary:\n` +
-			`Total Orders: ${totalOrders}\n`
-		// `Total Amount: $${totalAmount.toFixed(2)}`
+			`Total Orders: ${totalOrders}`
 	};
 
 	const response = await fetch(webhookUrl, {
