@@ -402,6 +402,7 @@ export default {
 			);
 			console.log('storeMetrics', storeMetrics)
 			const zoho_url = `${env.ZOHO_CLIQ_API_ENDPOINT}?zapikey=${env.ZOHO_CLIQ_WEBHOOK_TOKEN}&bot_unique_name=${env.ZOHO_CLIQ_BOTNAME}`
+			console.log('zoho_url', zoho_url)
 			await sendToCliq(zoho_url, storeMetrics, date);
 		} catch (error) {
 			console.error('Worker execution failed:', error);
