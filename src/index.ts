@@ -358,7 +358,8 @@ async function sendToCliq(webhookUrl: string, storeData: { [key: string]: StoreM
 	});
 
 	if (!response.ok) {
-		throw new Error(`Failed to send message to Cliq: ${response.statusText}`);
+		let responseString = JSON.stringify(response);
+		throw new Error(`Failed to send message to Cliq: ${response.statusText}; ${responseString}`);
 	}
 }
 
